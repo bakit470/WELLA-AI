@@ -6,17 +6,27 @@ const app = express();
 app.get('/', (req, res) => res.send('Wella Ai Bot Iko Wazi!'));
 app.listen(process.env.PORT || 3000);
 
-const GROQ_KEY = process.env.GROQ_KEY;
+const GEMINI_KEY = process.env.GEMINI_KEY;
 const FAL_KEY = process.env.FAL_KEY;
 const PHONE_NUMBER = '255749520061';
 
 const client = new Client({
     authStrategy: new LocalAuth(),
-    puppeteer: { args: ['--no-sandbox', '--disable-setuid-sandbox'] }
+    puppeteer: {
+        headless: true,
+        executablePath: '/opt/render/.cache/puppeteer/chrome/linux-146.0.7680.31/chrome-linux/chrome',
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-first-run', '--no-zygote', '--single-process']
+    }
+});
+
+client.on('qr', (qr) => {
+    console.log('QR RECEIVED', qr);
 });
 
 client.on('ready', () => console.log('Wella Ai Iko Tayari!'));
 client.on('authenticated', () => console.log('Imeunganika!'));
+client.on('auth_failure', (msg) => console.log('Auth imeshindwa:', msg));
+client.on('disconnected', (reason) => console.log('Imetoka:', reason));
 
 client.initialize().then(async () => {
     setTimeout(async () => {
@@ -26,18 +36,14 @@ client.initialize().then(async () => {
         } catch (e) {
             console.log('Code imeshindwa: ' + e.message);
         }
-    }, 5000);
-});
+    }, 10000);
+}).catch(err => console.log('Initialize error:', err));
 
 async function askAI(userMessage) {
-    const res = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-            { role: 'system', content: 'Wewe ni Wella Ai, msaidizi kutoka Tanzania. Jibu kwa Kiswahili rahisi, kirafiki. Unasaidia kutengeneza music na kujibu maswali yote.' },
-            { role: 'user', content: userMessage }
-        ]
-    }, { headers: { Authorization: `Bearer ${GROQ_KEY}` } });
-    return res.data.choices[0].message.content;
+    const res = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`, {
+        contents: [{ parts: [{ text: `Wewe ni Wella Ai, msaidizi kutoka Tanzania. Jibu kwa Kiswahili rahisi, kirafiki. Unasaidia kutengeneza music na kujibu maswali. Swali: ${userMessage}` }] }]
+    });
+    return res.data.candidates[0].content.parts[0].text;
 }
 
 client.on('message', async (msg) => {
