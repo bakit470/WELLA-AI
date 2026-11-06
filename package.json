@@ -1,12 +1,14 @@
 {
   "name": "wella-ai-bot",
   "version": "1.0.0",
+  "description": "Wella Ai WhatsApp Bot",
   "main": "index.js",
-  "scripts": { "start": "node index.js" },
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
-    "whatsapp-web.js": "^1.26.0",
     "axios": "^1.7.0",
     "express": "^4.19.0",
-    "puppeteer": "^23.0.0"
+    "whatsapp-web.js": "^1.26.0"
   }
 }
