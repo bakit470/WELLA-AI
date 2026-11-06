@@ -1,6 +1,8 @@
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const axios = require('axios');
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 app.get('/', (req, res) => res.send('Wella Ai Bot Iko Wazi!'));
@@ -10,19 +12,37 @@ const GEMINI_KEY = process.env.GEMINI_KEY;
 const FAL_KEY = process.env.FAL_KEY;
 const PHONE_NUMBER = '255749520061';
 
+// Tafuta Chrome kiotomatiki popote ilipo
+function findChrome() {
+    const base = '/opt/render/.cache/puppeteer/chrome';
+    try {
+        if (fs.existsSync(base)) {
+            const versions = fs.readdirSync(base);
+            for (const v of versions) {
+                const p1 = path.join(base, v, 'chrome-linux', 'chrome');
+                const p2 = path.join(base, v, 'chrome-linux64', 'chrome');
+                if (fs.existsSync(p1)) return p1;
+                if (fs.existsSync(p2)) return p2;
+            }
+        }
+    } catch (e) {}
+    // Kama haikupatikana, tumia ya puppeteer yenyewe
+    try { return require('puppeteer').executablePath(); } catch(e) { return undefined; }
+}
+
+const chromePath = findChrome();
+console.log('Chrome path found:', chromePath);
+
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
         headless: true,
-        executablePath: '/opt/render/.cache/puppeteer/chrome/linux-146.0.7680.31/chrome-linux/chrome',
+        executablePath: chromePath,
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-first-run', '--no-zygote', '--single-process']
     }
 });
 
-client.on('qr', (qr) => {
-    console.log('QR RECEIVED', qr);
-});
-
+client.on('qr', (qr) => console.log('QR RECEIVED', qr));
 client.on('ready', () => console.log('Wella Ai Iko Tayari!'));
 client.on('authenticated', () => console.log('Imeunganika!'));
 client.on('auth_failure', (msg) => console.log('Auth imeshindwa:', msg));
